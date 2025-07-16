@@ -9,9 +9,9 @@ router.post('/login', handleLogin)
 router.post('/register', upload.single('avatar'), handleRegister)
 router.post('/logout', authenticate, handleLogout)
 
-router.get('/test', authenticate, (req: Request, res: Response) => {
+router.get('/me', authenticate, (req: Request, res: Response) => {
     const user = (req as any).user
-    res.status(200).json({ user })
+    res.status(200).json({ user });
 })
 
 export default router

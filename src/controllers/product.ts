@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { addProductAdmin, getProduct, getProductAdmin, hardDeleteProductAdmin, restoreProductAdmin, softDeleteProductAdmin, updateProductAdmin } from "../services/product";
+import { addProductAdmin, getDeleteProductAdmin, getProduct, getProductAdmin, hardDeleteProductAdmin, restoreProductAdmin, softDeleteProductAdmin, updateProductAdmin } from "../services/product";
 import { productSchema } from "../validation/product";
 
 
@@ -105,9 +105,26 @@ export async function handleUpdateProduct(req: Request, res: Response) {
 export async function handleSoftDeleteProduct(req: Request, res: Response) {
     try {
         const user = (req as any).user
+        if (user.role !== 'ADMIN') {
+            throw Error("user is not admin")
+        }
         const id = parseInt(req.params.id)
         const deleted = await softDeleteProductAdmin(user, id)
         res.status(200).json({ message: "success", deleted })
+    } catch (error: any) {
+        res.status(400).json({ message: error.message })
+    }
+}
+
+export async function handleGetDeleteProduct(req: Request, res: Response) {
+    try {
+        const user = (req as any).user
+        if (user.role !== 'ADMIN') {
+            throw Error("user is not admin")
+        }
+
+        const result = await getDeleteProductAdmin(user)
+        res.status(200).json({ message: "succes", result })
     } catch (error: any) {
         res.status(400).json({ message: error.message })
     }

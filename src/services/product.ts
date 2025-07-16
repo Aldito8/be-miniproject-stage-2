@@ -68,7 +68,7 @@ export async function getProductAdmin(
         throw Error("product not found")
     }
 
-    return product
+    return { product }
 }
 
 export async function addProductAdmin(
@@ -184,6 +184,24 @@ export async function softDeleteProductAdmin(
     }
 }
 
+export async function getDeleteProductAdmin(
+    user: UserPayload) {
+    const product = await prisma.product.findMany({
+        where: {
+            ownerId: user.id,
+            deletedAt: {
+                not: null
+            }
+        }
+    })
+
+    if (!product) {
+        throw Error("product not found")
+    }
+
+    return { product }
+}
+
 export async function restoreProductAdmin(
     user: UserPayload,
     id: number) {
@@ -193,7 +211,7 @@ export async function restoreProductAdmin(
 
     const product = await prisma.product.findUnique({
         where: {
-            id
+            id: id
         }
     })
 
@@ -206,7 +224,7 @@ export async function restoreProductAdmin(
     }
 
     const del = await prisma.product.update({
-        where: { id },
+        where: { id: id },
         data: {
             deletedAt: null
         }
@@ -238,11 +256,14 @@ export async function hardDeleteProductAdmin(
         throw Error("cannot directly delete product")
     }
 
-    const del = await prisma.product.delete({
-        where: {
-            id
-        }
-    })
+    const del = await prisma.$transaction([
+        prisma.order.deleteMany({
+            where: { productId: id }
+        }),
+        prisma.product.delete({
+            where: { id }
+        })
+    ]);
 
     return {
         delete: del

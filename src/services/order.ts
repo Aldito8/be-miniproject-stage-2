@@ -2,17 +2,16 @@ import { prisma } from "../prisma/client"
 import { UserPayload } from "../utils/jwt";
 
 export async function getAllUserOrder() {
-
-    const orders = await prisma.order.groupBy({
+    const ordersGrouped = await prisma.order.groupBy({
         by: ['buyerId'],
         _count: { id: true },
         _sum: {
             quantity: true,
             total: true
         }
-    })
+    });
 
-    const userIds = orders.map(o => o.buyerId);
+    const userIds = ordersGrouped.map(o => o.buyerId);
 
     const users = await prisma.user.findMany({
         where: { id: { in: userIds } },
@@ -20,10 +19,52 @@ export async function getAllUserOrder() {
             id: true,
             name: true
         }
-    })
+    });
 
-    const result = orders.map(orderGroup => {
+    const allOrders = await prisma.order.findMany({
+        where: {
+            buyerId: { in: userIds }
+        },
+        select: {
+            buyerId: true,
+            quantity: true,
+            product: {
+                select: {
+                    id: true,
+                    name: true
+                }
+            }
+        }
+    });
+
+    const userProductsMap: {
+        [buyerId: number]: { id: number; name: string; quantity: number }[];
+    } = {};
+
+    for (const order of allOrders) {
+        const buyerId = order.buyerId;
+        const product = order.product;
+
+        if (!userProductsMap[buyerId]) {
+            userProductsMap[buyerId] = [];
+        }
+
+        if (!userProductsMap[buyerId][product.id]) {
+            userProductsMap[buyerId][product.id] = {
+                id: product.id,
+                name: product.name,
+                quantity: 0
+            };
+        }
+
+        userProductsMap[buyerId][product.id].quantity += order.quantity;
+    }
+
+    const result = ordersGrouped.map(orderGroup => {
         const user = users.find(u => u.id === orderGroup.buyerId);
+        const productMap = userProductsMap[orderGroup.buyerId] || {};
+        const products = Object.values(productMap);
+
         return {
             user: {
                 id: user?.id,
@@ -31,12 +72,14 @@ export async function getAllUserOrder() {
             },
             totalOrder: orderGroup._count.id,
             totalQuantity: orderGroup._sum.quantity || 0,
-            totalSpent: orderGroup._sum.total || 0
+            totalSpent: orderGroup._sum.total || 0,
+            products
         };
     });
 
-    return result
+    return result;
 }
+
 
 
 export async function getUserOrder(

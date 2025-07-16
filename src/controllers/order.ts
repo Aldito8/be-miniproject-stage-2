@@ -34,7 +34,7 @@ export async function handleGetUserOrder(req: Request, res: Response) {
             maxQuantity = '',
             minTotal = '',
             maxTotal = '',
-            limit = '10',
+            limit = '100',
             offset = '0' } = req.query
 
         const user = (req as any).user

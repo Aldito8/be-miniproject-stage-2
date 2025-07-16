@@ -31,8 +31,9 @@ export async function handleLogin(req: Request, res: Response) {
 
         const { email, password } = req.body
         const result = await userLogin(email, password)
+
         res.cookie('token', result.token, {
-            httpOnly: true,
+            httpOnly: false,
             sameSite: 'strict',
             maxAge: 1000 * 60 * 60 * 24
         });

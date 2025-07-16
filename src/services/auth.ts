@@ -67,6 +67,7 @@ export async function userLogin(
     })
 
     return {
+        id: user.id,
         name: user.name,
         role: user.role,
         email: user.email,
